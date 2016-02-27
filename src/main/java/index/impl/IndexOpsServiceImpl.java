@@ -63,11 +63,13 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     public MdPos createDirIndex(String parentPath, String dirName) throws RemoteException {
         MdIndex parentIndex = getMdIndexByPath(parentPath);
         if (isDirExist(parentIndex.getfCode(), dirName)) {
-            logger.info("dir exist", parentPath, dirName);
+            logger.info("dir exist:" + parentPath + " " + dirName);
             return null;
         }
+        long fCode = commonModule.genFCode();
+        long dCode = commonModule.genDCode();
         indexDao.insertMdIndex(buildKey(parentIndex.getfCode(), dirName),
-                genDirIndex(commonModule.genFCode(), commonModule.genDCode()));
+                genDirIndex(fCode,dCode));
         return getMdAttrPos(parentIndex, parentPath);
     }
 
@@ -123,12 +125,21 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
 
     @Override
     public boolean deleteDir(String path) throws RemoteException {
-        MdIndex mdIndex = getMdIndexByPath(path);
+        MdIndex mdIndex;
+        if (path.equals("/")){
+            mdIndex = getMdIndexByPath(path);
+        }else {
+            mdIndex = getMdIndexByPathAndRemove(path);
+        }
+        MdIndexCacheTool.clearMdIndexCache();
+
         Queue<MdIndex> queue = new LinkedList<MdIndex>();
         queue.offer(mdIndex);
+        MdIndex beDelIndex;
         while (!queue.isEmpty()) {
-            delDirHashBucket(queue.poll());
-            for (MdIndex temp : indexDao.findSubDirMdIndex(mdIndex.getfCode())) {
+            beDelIndex = queue.poll();
+            delDirHashBucket(beDelIndex);
+            for (MdIndex temp : indexDao.findSubDirMdIndexAndRemove(beDelIndex.getfCode())) {
                 queue.offer(temp);
             }
         }
@@ -170,6 +181,25 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
             code = mdIndex.getfCode();
         }
         MdIndexCacheTool.setMdIndexToCache(path, mdIndex);
+        return mdIndex;
+    }
+
+    public MdIndex getMdIndexByPathAndRemove(String path) {
+        MdIndex mdIndex = null;
+        String[] nameArray = splitPath(path);
+        long code = -1;
+        long pCode = -1;
+        String dirName = null;
+        for (String name : nameArray) {
+            mdIndex = indexDao.findMdIndex(buildKey(code, name));
+            if (mdIndex == null) {
+                throw new IllegalArgumentException(String.format("path %s not exist.", path));
+            }
+            pCode = code;
+            code = mdIndex.getfCode();
+            dirName = name;
+        }
+        indexDao.removeMdIndex(buildKey(pCode, dirName));
         return mdIndex;
     }
 

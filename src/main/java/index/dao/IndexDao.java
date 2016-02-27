@@ -16,7 +16,7 @@ public interface IndexDao {
 
     public boolean removeMdIndex(String key);
 
-    public List<MdIndex> findSubDirMdIndex(long fCode);
+    public List<MdIndex> findSubDirMdIndexAndRemove(long fCode);
 
     public boolean deleteDirMd(MdPos mdPos);
 
