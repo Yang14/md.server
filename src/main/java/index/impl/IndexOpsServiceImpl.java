@@ -69,7 +69,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         long fCode = commonModule.genFCode();
         long dCode = commonModule.genDCode();
         indexDao.insertMdIndex(buildKey(parentIndex.getfCode(), dirName),
-                genDirIndex(fCode,dCode));
+                genDirIndex(fCode, dCode));
         return getMdAttrPos(parentIndex, parentPath);
     }
 
@@ -126,23 +126,26 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     @Override
     public boolean deleteDir(String path) throws RemoteException {
         MdIndex mdIndex;
-        if (path.equals("/")){
+        if (path.equals("/")) {
             mdIndex = getMdIndexByPath(path);
-        }else {
+        } else {
             mdIndex = getMdIndexByPathAndRemove(path);
         }
         MdIndexCacheTool.clearMdIndexCache();
-
         Queue<MdIndex> queue = new LinkedList<MdIndex>();
         queue.offer(mdIndex);
         MdIndex beDelIndex;
+        int count = 0;
         while (!queue.isEmpty()) {
+            count++;
             beDelIndex = queue.poll();
             delDirHashBucket(beDelIndex);
-            for (MdIndex temp : indexDao.findSubDirMdIndexAndRemove(beDelIndex.getfCode())) {
+            List<MdIndex> mdIndexes = indexDao.findSubDirMdIndexAndRemove(beDelIndex.getfCode());
+            for (MdIndex temp : mdIndexes) {
                 queue.offer(temp);
             }
         }
+        logger.info("delete dir count is :" + count);
         return true;
     }
 
