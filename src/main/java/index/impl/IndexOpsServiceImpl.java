@@ -63,7 +63,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     public MdPos createDirIndex(String parentPath, String dirName) throws RemoteException {
         MdIndex parentIndex = getMdIndexByPath(parentPath);
         if (isDirExist(parentIndex.getfCode(), dirName)) {
-            logger.info("dir exist:" + parentPath + " " + dirName);
+//            logger.info("dir exist:" + parentPath + " " + dirName);
             return null;
         }
         long fCode = commonModule.genFCode();
@@ -109,6 +109,9 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     @Override
     public List<MdPos> getMdPosList(String path) throws RemoteException {
         MdIndex mdIndex = getMdIndexByPath(path);
+        if (mdIndex == null) {
+            return null;
+        }
         return commonModule.buildMdPosList(mdIndex.getdCodeList());
     }
 
@@ -118,6 +121,8 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         String oldKey = buildKey(parentIndex.getfCode(), oldName);
         MdIndex mdIndex = indexDao.findMdIndex(oldKey);
         String newKey = buildKey(parentIndex.getfCode(), newName);
+        String separator = parentPath.equals("/") ? "" : "/";
+        MdIndexCacheTool.removeMdIndex(parentPath + separator + oldName);
         indexDao.insertMdIndex(newKey, mdIndex);
         indexDao.removeMdIndex(oldKey);
         return commonModule.buildMdPosList(parentIndex.getdCodeList());
@@ -135,9 +140,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         Queue<MdIndex> queue = new LinkedList<MdIndex>();
         queue.offer(mdIndex);
         MdIndex beDelIndex;
-        int count = 0;
         while (!queue.isEmpty()) {
-            count++;
             beDelIndex = queue.poll();
             delDirHashBucket(beDelIndex);
             List<MdIndex> mdIndexes = indexDao.findSubDirMdIndexAndRemove(beDelIndex.getfCode());
@@ -145,7 +148,6 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
                 queue.offer(temp);
             }
         }
-        logger.info("delete dir count is :" + count);
         return true;
     }
 
@@ -179,7 +181,8 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         for (String name : nameArray) {
             mdIndex = indexDao.findMdIndex(buildKey(code, name));
             if (mdIndex == null) {
-                throw new IllegalArgumentException(String.format("path %s not exist.", path));
+                logger.error(String.format("path %s not exist.", path));
+                return null;
             }
             code = mdIndex.getfCode();
         }
