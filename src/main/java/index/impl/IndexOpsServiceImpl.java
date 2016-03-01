@@ -13,10 +13,11 @@ import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Mr-yang on 16-2-18.
@@ -26,6 +27,8 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
 
     private IndexDao indexDao = new RocksdbDaoImpl();
     private CommonModule commonModule = new CommonModuleImpl();
+    private final Executor exec = new ThreadPoolExecutor(6, 6, 0L,
+            TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>(10000));
 
     public IndexOpsServiceImpl() throws RemoteException {
         super();
@@ -139,7 +142,8 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         MdIndexCacheTool.clearMdIndexCache();
         Queue<MdIndex> queue = new LinkedList<MdIndex>();
         queue.offer(mdIndex);
-        MdIndex beDelIndex;
+        delDirRecursive(queue);
+        /*MdIndex beDelIndex;
         while (!queue.isEmpty()) {
             beDelIndex = queue.poll();
             delDirHashBucket(beDelIndex);
@@ -147,8 +151,22 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
             for (MdIndex temp : mdIndexes) {
                 queue.offer(temp);
             }
-        }
+        }*/
         return true;
+    }
+
+    private void delDirRecursive(final Queue<MdIndex> queue) {
+        while (!queue.isEmpty()) {
+            final MdIndex index = queue.poll();
+            exec.execute(new Runnable() {
+                @Override
+                public void run() {
+                    delDirHashBucket(index);
+                    queue.addAll(indexDao.findSubDirMdIndexAndRemove(index.getfCode()));
+                }
+            });
+            delDirRecursive(queue);
+        }
     }
 
     private void delDirHashBucket(MdIndex mdIndex) {
@@ -199,7 +217,8 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         for (String name : nameArray) {
             mdIndex = indexDao.findMdIndex(buildKey(code, name));
             if (mdIndex == null) {
-                throw new IllegalArgumentException(String.format("path %s not exist.", path));
+                logger.error(String.format("path %s not exist.", path));
+                return null;
             }
             pCode = code;
             code = mdIndex.getfCode();

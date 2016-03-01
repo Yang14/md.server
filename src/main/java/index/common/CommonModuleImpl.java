@@ -36,7 +36,7 @@ public class CommonModuleImpl implements CommonModule {
     @Override
     public MdPos buildMdPos(long dCode) {
         MdPos md = new MdPos();
-        if (dCode < two) {
+        /*if (dCode < two) {
             md.setIp("192.168.0.58");
         } else if (two <= dCode && dCode < three) {
             md.setIp("192.168.0.13");
@@ -44,8 +44,12 @@ public class CommonModuleImpl implements CommonModule {
             md.setIp("192.168.0.12");
         } else {
             md.setIp("192.168.0.12");
+        }*/
+        if (dCode % 2 == 0) {
+            md.setIp("192.168.0.58");
+        } else {
+            md.setIp("192.168.0.10");
         }
-        md.setIp("192.168.0.10");
         md.setdCode(dCode);
         md.setPort(PortEnum.SSDB_PORT);
         return md;
