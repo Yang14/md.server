@@ -5,6 +5,7 @@ import base.md.MdIndex;
 import base.md.MdPos;
 import index.common.CommonModule;
 import index.common.CommonModuleImpl;
+import index.common.DCodeMap;
 import index.dao.IndexDao;
 import index.dao.impl.RocksdbDaoImpl;
 import index.tool.MdIndexCacheTool;
@@ -27,7 +28,8 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     private int coreSize = Runtime.getRuntime().availableProcessors();
     private final Executor exec = new ThreadPoolExecutor(coreSize, coreSize + 1, 0L,
             TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>());
-//    private final Executor exec = Executors.newCachedThreadPool();
+
+    //    private final Executor exec = Executors.newCachedThreadPool();
     public IndexOpsServiceImpl() throws RemoteException {
         super();
         initRootDir();
@@ -36,11 +38,11 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     private void initRootDir() {
         long parentCode = -1;
         long fCode = -1;
-        long dCode = 0;
+        DCodeMap dCodeMap = new DCodeMap(0L, 0);
         String name = "/";
         if (!isDirExist(parentCode, name)) {
             String key = buildKey(parentCode, name);
-            MdIndex rootIndex = genDirIndex(fCode, dCode);
+            MdIndex rootIndex = genDirIndex(fCode, dCodeMap);
             boolean isInit = indexDao.insertMdIndex(key, rootIndex);
             if (isInit) {
                 logger.info("init root dir...");
@@ -50,10 +52,10 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         }
     }
 
-    private MdIndex genDirIndex(long fCode, long dCode) {
-        List<Long> dCodes = new ArrayList<Long>();
-        dCodes.add(dCode);
-        return new MdIndex(fCode, dCodes);
+    private MdIndex genDirIndex(long fCode, DCodeMap dCode) {
+        Map<Long, Integer> dCodeMap = new LinkedHashMap<Long, Integer>();
+        dCodeMap.put(dCode.getdCode(), dCode.getBsNode());
+        return new MdIndex(fCode, dCodeMap);
     }
 
     private boolean isDirExist(long pCode, String dirName) {
@@ -68,7 +70,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
             return null;
         }
         long fCode = commonModule.genFCode();
-        long dCode = commonModule.genDCode();
+        DCodeMap dCode = commonModule.genDCode();
         indexDao.insertMdIndex(buildKey(parentIndex.getfCode(), dirName),
                 genDirIndex(fCode, dCode));
         return getMdAttrPos(parentIndex, parentPath);
@@ -76,9 +78,12 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
 
 
     private MdPos getMdAttrPos(MdIndex parentIndex, String path) {
-        List<Long> dCodeList = parentIndex.getdCodeList();
-        long dCode = dCodeList.get(dCodeList.size() - 1);
-        boolean isFit = commonModule.isDCodeFit(dCode);
+        Map<Long, Integer> dCodeMap = parentIndex.getdCodeMap();
+        DCodeMap dCode = null;
+        for (long key : dCodeMap.keySet()){
+            dCode = new DCodeMap(key,dCodeMap.get(key));
+        }
+        boolean isFit = commonModule.isDCodeFit(dCode.getBsNode());
         if (!isFit) {
             dCode = commonModule.genDCode();
             updateDCodeListWithNewCode(parentIndex, path, dCode);
@@ -87,7 +92,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     }
 
     //先要得到保存父目录的键，再更新节点信息
-    private boolean updateDCodeListWithNewCode(MdIndex mdIndex, String path, long newDCode) {
+    private boolean updateDCodeListWithNewCode(MdIndex mdIndex, String path, DCodeMap dCode) {
         int pos = path.lastIndexOf("/");
         String front = path.substring(0, pos);
         String end = path.substring(pos + 1);
@@ -95,9 +100,9 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
             front = "/";
         }
         String parentKey = buildKey(getMdIndexByPath(front).getfCode(), end);
-        List<Long> dCodeList = mdIndex.getdCodeList();
-        dCodeList.add(newDCode);
-        mdIndex.setdCodeList(dCodeList);
+        Map<Long, Integer> dCodeMap = mdIndex.getdCodeMap();
+        dCodeMap.put(dCode.getdCode(),dCode.getBsNode());
+        mdIndex.setdCodeMap(dCodeMap);
         return indexDao.insertMdIndex(parentKey, mdIndex);
     }
 
@@ -113,7 +118,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         if (mdIndex == null) {
             return null;
         }
-        return commonModule.buildMdPosList(mdIndex.getdCodeList());
+        return commonModule.buildMdPosList(mdIndex.getdCodeMap());
     }
 
     @Override
@@ -126,7 +131,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         MdIndexCacheTool.removeMdIndex(parentPath + separator + oldName);
         indexDao.insertMdIndex(newKey, mdIndex);
         indexDao.removeMdIndex(oldKey);
-        return commonModule.buildMdPosList(parentIndex.getdCodeList());
+        return commonModule.buildMdPosList(parentIndex.getdCodeMap());
     }
 
     @Override
@@ -141,15 +146,6 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         Queue<MdIndex> queue = new LinkedBlockingDeque<MdIndex>();
         queue.offer(mdIndex);
         delDirRecursive(queue);
-        /*MdIndex beDelIndex;
-        while (!queue.isEmpty()) {
-            beDelIndex = queue.poll();
-            delDirHashBucket(beDelIndex);
-            List<MdIndex> mdIndexes = indexDao.findSubDirMdIndexAndRemove(beDelIndex.getfCode());
-            for (MdIndex temp : mdIndexes) {
-                queue.offer(temp);
-            }
-        }*/
         return true;
     }
 
@@ -168,7 +164,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     }
 
     private void delDirHashBucket(MdIndex mdIndex) {
-        List<MdPos> mdPoses = commonModule.buildMdPosList(mdIndex.getdCodeList());
+        List<MdPos> mdPoses = commonModule.buildMdPosList(mdIndex.getdCodeMap());
         for (MdPos mdPos : mdPoses) {
             indexDao.deleteDirMd(mdPos);
         }

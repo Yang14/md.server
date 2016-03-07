@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -19,6 +20,8 @@ public class CommonModuleImpl implements CommonModule {
     private long seed = (0x7fffffffffffffffL / 3) * 2;
     private long two = 0x8000000000000000L + seed;
     private long three = two + seed;
+    private String[] ipArray = new String[]{"192.168.0.10", "192.168.0.60", "192.168.0.58"};
+    private int ipLen = ipArray.length;
 
     @Override
     public long genFCode() {
@@ -26,53 +29,42 @@ public class CommonModuleImpl implements CommonModule {
     }
 
     @Override
-    public long genDCode() {
-//        return (long) (new Random().nextInt());
-        return random.nextLong();
+    public DCodeMap genDCode() {
+        return new DCodeMap(random.nextLong(),random.nextInt(ipLen));
     }
 
     @Override
-    public boolean isDCodeFit(long dCode) {
+    public boolean isDCodeFit(int bsNode) {
         return true;
     }
 
     @Override
-    public MdPos buildMdPos(long dCode) {
+    public MdPos buildMdPos(long dCode,int bsNode) {
         MdPos md = new MdPos();
-        /*if (dCode < two) {
-            md.setIp("192.168.0.58");
-        } else if (two <= dCode && dCode < three) {
-            md.setIp("192.168.0.13");
-        } else if (three <= dCode) {
-            md.setIp("192.168.0.12");
-        } else {
-            md.setIp("192.168.0.12");
-        }*/
-        if (dCode < two) {
-            md.setIp("192.168.0.10");
-        } else if (dCode < three) {
-            md.setIp("192.168.0.58");
-        } else {
-            md.setIp("192.168.0.60");
-        }
+        md.setIp(ipArray[bsNode]);
         md.setdCode(dCode);
         md.setPort(PortEnum.SSDB_PORT);
         return md;
     }
 
     @Override
-    public MdPos createMdPos() {
-        return buildMdPos(genDCode());
+    public MdPos buildMdPos(DCodeMap dCodeMap) {
+        return buildMdPos(dCodeMap.getdCode(),dCodeMap.getBsNode());
     }
 
     @Override
-    public List<MdPos> buildMdPosList(List<Long> dCodeList) {
-        if (dCodeList == null) {
+    public MdPos createMdPos() {
+        return null;
+    }
+
+    @Override
+    public List<MdPos> buildMdPosList(Map<Long,Integer> dCodesMap) {
+        if (dCodesMap == null) {
             return null;
         }
         List<MdPos> mdPoses = new ArrayList<MdPos>();
-        for (long code : dCodeList) {
-            mdPoses.add(buildMdPos(code));
+        for (long key : dCodesMap.keySet()) {
+            mdPoses.add(buildMdPos(key,dCodesMap.get(key)));
         }
         return mdPoses;
     }

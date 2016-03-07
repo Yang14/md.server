@@ -1,7 +1,7 @@
 package base.md;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Mr-yang on 16-1-9.
@@ -9,27 +9,25 @@ import java.util.List;
  */
 public class MdIndex implements Serializable {
     private long fCode;
-    private List<Long> dCodeList;
+    private Map<Long,Integer> dCodeMap;
+
+    public MdIndex() {
+    }
 
     @Override
     public String toString() {
         return "MdIndex{" +
                 "fCode=" + fCode +
-                ", dCodeList=" + dCodeList +
+                ", dCodeMap=" + dCodeMap +
                 '}';
     }
 
-    public MdIndex(long fCode, List<Long> dCodeList) {
+    public MdIndex(long fCode, Map<Long, Integer> dCodeMap) {
         this.fCode = fCode;
-        this.dCodeList = dCodeList;
-    }
-
-    public MdIndex() {
-
+        this.dCodeMap = dCodeMap;
     }
 
     public long getfCode() {
-
         return fCode;
     }
 
@@ -37,11 +35,11 @@ public class MdIndex implements Serializable {
         this.fCode = fCode;
     }
 
-    public List<Long> getdCodeList() {
-        return dCodeList;
+    public Map<Long, Integer> getdCodeMap() {
+        return dCodeMap;
     }
 
-    public void setdCodeList(List<Long> dCodeList) {
-        this.dCodeList = dCodeList;
+    public void setdCodeMap(Map<Long, Integer> dCodeMap) {
+        this.dCodeMap = dCodeMap;
     }
 }
