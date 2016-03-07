@@ -2,6 +2,8 @@ package index.common;
 
 import base.md.MdPos;
 import base.tool.PortEnum;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,12 +13,12 @@ import java.util.Random;
  * Created by Mr-yang on 16-1-11.
  */
 public class CommonModuleImpl implements CommonModule {
+    private static Logger logger = LoggerFactory.getLogger("CommonModuleImpl");
 
     private static Random random = new Random(Long.MAX_VALUE);
-    private final long one = Long.MIN_VALUE;
-    private final long two = Long.MAX_VALUE * (1 / 3);
-    private final long three = Long.MAX_VALUE * (2 / 3);
-    private final long four = Long.MAX_VALUE;
+    private long seed = (0x7fffffffffffffffL / 3) * 2;
+    private long two = 0x8000000000000000L + seed;
+    private long three = two + seed;
 
     @Override
     public long genFCode() {
@@ -25,7 +27,8 @@ public class CommonModuleImpl implements CommonModule {
 
     @Override
     public long genDCode() {
-        return (long) (new Random().nextInt());
+//        return (long) (new Random().nextInt());
+        return random.nextLong();
     }
 
     @Override
@@ -45,10 +48,12 @@ public class CommonModuleImpl implements CommonModule {
         } else {
             md.setIp("192.168.0.12");
         }*/
-        if (dCode % 2 == 0) {
+        if (dCode < two) {
+            md.setIp("192.168.0.10");
+        } else if (dCode < three) {
             md.setIp("192.168.0.58");
         } else {
-            md.setIp("192.168.0.10");
+            md.setIp("192.168.0.60");
         }
         md.setdCode(dCode);
         md.setPort(PortEnum.SSDB_PORT);

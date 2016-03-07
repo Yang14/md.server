@@ -14,10 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Created by Mr-yang on 16-2-18.
@@ -27,9 +24,10 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
 
     private IndexDao indexDao = new RocksdbDaoImpl();
     private CommonModule commonModule = new CommonModuleImpl();
-    private final Executor exec = new ThreadPoolExecutor(6, 6, 0L,
-            TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>(10000));
-
+    private int coreSize = Runtime.getRuntime().availableProcessors();
+    private final Executor exec = new ThreadPoolExecutor(coreSize, coreSize + 1, 0L,
+            TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>());
+//    private final Executor exec = Executors.newCachedThreadPool();
     public IndexOpsServiceImpl() throws RemoteException {
         super();
         initRootDir();
@@ -140,7 +138,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
             mdIndex = getMdIndexByPathAndRemove(path);
         }
         MdIndexCacheTool.clearMdIndexCache();
-        Queue<MdIndex> queue = new LinkedList<MdIndex>();
+        Queue<MdIndex> queue = new LinkedBlockingDeque<MdIndex>();
         queue.offer(mdIndex);
         delDirRecursive(queue);
         /*MdIndex beDelIndex;
@@ -229,6 +227,6 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     }
 
     private String buildKey(long pCode, String fileName) {
-        return pCode + ":" + fileName;
+        return fileName + ":" + pCode;
     }
 }
