@@ -28,11 +28,18 @@ public class CommonModuleImpl implements CommonModule {
             BufferedReader buf = new BufferedReader(new FileReader("/home/yang/workspace/bs_ip"));
             List<String> ipList = new ArrayList<String>();
             String ipStr;
+            String info = "backend server Ip:";
             while ((ipStr = buf.readLine()) != null) {
+                info += ipStr +"/";
                 ipList.add(ipStr);
             }
-            ipArray = (String[]) ipList.toArray();
+            logger.info(info);
             ipLen = ipList.size();
+            ipArray = new String[ipLen];
+            int i = 0;
+            for (String ip : ipList) {
+                ipArray[i++] = ip;
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -97,7 +97,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass></mainClass>
+                            <mainClass>index.IndexServer</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
