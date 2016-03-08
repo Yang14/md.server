@@ -5,6 +5,9 @@ import base.tool.PortEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +20,23 @@ public class CommonModuleImpl implements CommonModule {
     private static Logger logger = LoggerFactory.getLogger("CommonModuleImpl");
 
     private static Random random = new Random();
-    private String[] ipArray = new String[]{/*"192.168.0.12", "192.168.0.60", */"192.168.0.60"};
-    private int ipLen = ipArray.length;
+    private String[] ipArray;
+    private int ipLen;
+
+    public CommonModuleImpl() {
+        try {
+            BufferedReader buf = new BufferedReader(new FileReader("/home/yang/workspace/bs_ip"));
+            List<String> ipList = new ArrayList<String>();
+            String ipStr;
+            while ((ipStr = buf.readLine()) != null) {
+                ipList.add(ipStr);
+            }
+            ipArray = (String[]) ipList.toArray();
+            ipLen = ipList.size();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public long genFCode() {
