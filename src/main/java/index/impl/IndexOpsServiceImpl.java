@@ -122,7 +122,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     }
 
     @Override
-    public List<MdPos> renameDirIndex(String parentPath, String oldName, String newName) throws RemoteException {
+    public boolean renameDirIndex(String parentPath, String oldName, String newName) throws RemoteException {
         MdIndex parentIndex = getMdIndexByPath(parentPath);
         String oldKey = buildKey(parentIndex.getfCode(), oldName);
         MdIndex mdIndex = indexDao.findMdIndex(oldKey);
@@ -131,7 +131,15 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         MdIndexCacheTool.removeMdIndex(parentPath + separator + oldName);
         indexDao.insertMdIndex(newKey, mdIndex);
         indexDao.removeMdIndex(oldKey);
-        return commonModule.buildMdPosList(parentIndex.getdCodeMap());
+        List<MdPos> mdPosList =  commonModule.buildMdPosList(parentIndex.getdCodeMap());
+        boolean renameResult = false;
+        for (MdPos mdPos : mdPosList) {
+            renameResult = indexDao.renameMd(mdPos, oldName, newName);
+            if (renameResult) {
+                break;
+            }
+        }
+        return renameResult;
     }
 
     @Override

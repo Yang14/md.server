@@ -33,7 +33,7 @@ public interface IndexOpsService extends Remote {
     /**
      * 重命名目录索引
      */
-    public List<MdPos> renameDirIndex(String parentPath, String oldName, String newName) throws RemoteException;
+    public boolean renameDirIndex(String parentPath, String oldName, String newName) throws RemoteException;
 
     /**
      * 索引端提供删除目录功能

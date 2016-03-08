@@ -20,4 +20,5 @@ public interface IndexDao {
 
     public boolean deleteDirMd(MdPos mdPos);
 
+    public boolean renameMd(MdPos mdPos, String oldName, String newName);
 }

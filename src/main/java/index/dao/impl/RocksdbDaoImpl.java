@@ -1,5 +1,6 @@
 package index.dao.impl;
 
+import base.md.MdAttr;
 import base.md.MdIndex;
 import base.md.MdPos;
 import com.alibaba.fastjson.JSON;
@@ -92,5 +93,15 @@ public class RocksdbDaoImpl implements IndexDao {
     public boolean deleteDirMd(MdPos mdPos) {
         SSDB ssdb = ConnTool.getSSDB(mdPos);
         return ssdb.hclear(mdPos.getdCode()).ok();
+    }
+
+    @Override
+    public boolean renameMd(MdPos mdPos, String oldName, String newName) {
+        SSDB ssdb = ConnTool.getSSDB(mdPos);
+        long dCode = mdPos.getdCode();
+        MdAttr mdAttr = JSON.parseObject(ssdb.hget(dCode, oldName).asString(), MdAttr.class);
+        mdAttr.setName(newName);
+        ssdb.hdel(dCode, oldName);
+        return ssdb.hset(dCode, newName, JSON.toJSONString(mdAttr)).ok();
     }
 }
