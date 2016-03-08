@@ -69,9 +69,11 @@ public class RocksdbDaoImpl implements IndexDao {
         RocksIterator it = db.newIterator(new ReadOptions());
         String startStr = fCode + "";
         String endStr = (fCode + 1) + "";
+        MdIndex mdIndex;
         for (it.seek(startStr.getBytes());
              it.isValid() && (new String(it.key()).compareTo(endStr) < 0); it.next()) {
-            mdIndexes.add(JSON.parseObject(new String(it.value()), MdIndex.class));
+            mdIndex = JSON.parseObject(new String(it.value()), MdIndex.class);
+            mdIndexes.add(mdIndex);
             removeKV(it.key());
         }
         return mdIndexes;

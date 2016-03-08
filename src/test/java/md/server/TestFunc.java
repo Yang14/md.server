@@ -2,6 +2,7 @@ package md.server;
 
 import base.api.IndexOpsService;
 import base.md.MdIndex;
+import index.common.DCodeMap;
 import index.dao.IndexDao;
 import index.dao.impl.RocksdbDaoImpl;
 import index.impl.IndexOpsServiceImpl;
@@ -13,7 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by yang on 16-2-26.
@@ -28,7 +31,7 @@ public class TestFunc extends TestSuite {
     public void setUp() throws RemoteException {
         service = new IndexOpsServiceImpl();
     }
-    @Test
+   /* @Test
     public void testDelDir(){
 
         MdIndex mdIndex1 = genDirIndex(100L,-10L);
@@ -50,7 +53,7 @@ public class TestFunc extends TestSuite {
         for (MdIndex index : dirIndexes){
             logger.info(index.toString());
         }
-    }
+    }*/
     @Test
     public void testDelDirFromService() throws RemoteException {
         service.createDirIndex("/","e");
@@ -62,9 +65,10 @@ public class TestFunc extends TestSuite {
      //   logger.info(service.getMdPosList("/e").toString());
 
     }
-    private MdIndex genDirIndex(long fCode, long dCode) {
-        List<Long> dCodes = new ArrayList<Long>();
-        dCodes.add(dCode);
-        return new MdIndex(fCode, dCodes);
+
+    private MdIndex genDirIndex(long fCode, DCodeMap dCode) {
+        Map<Long, Integer> dCodeMap = new LinkedHashMap<Long, Integer>();
+        dCodeMap.put(dCode.getdCode(), dCode.getBsNode());
+        return new MdIndex(fCode, dCodeMap);
     }
 }

@@ -37,7 +37,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
 
     private void initRootDir() {
         long parentCode = -1;
-        long fCode = -1;
+        long fCode = 0;
         DCodeMap dCodeMap = new DCodeMap(0L, 0);
         String name = "/";
         if (!isDirExist(parentCode, name)) {
@@ -80,8 +80,8 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     private MdPos getMdAttrPos(MdIndex parentIndex, String path) {
         Map<Long, Integer> dCodeMap = parentIndex.getdCodeMap();
         DCodeMap dCode = null;
-        for (long key : dCodeMap.keySet()){
-            dCode = new DCodeMap(key,dCodeMap.get(key));
+        for (long key : dCodeMap.keySet()) {
+            dCode = new DCodeMap(key, dCodeMap.get(key));
         }
         boolean isFit = commonModule.isDCodeFit(dCode.getBsNode());
         if (!isFit) {
@@ -101,7 +101,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         }
         String parentKey = buildKey(getMdIndexByPath(front).getfCode(), end);
         Map<Long, Integer> dCodeMap = mdIndex.getdCodeMap();
-        dCodeMap.put(dCode.getdCode(),dCode.getBsNode());
+        dCodeMap.put(dCode.getdCode(), dCode.getBsNode());
         mdIndex.setdCodeMap(dCodeMap);
         return indexDao.insertMdIndex(parentKey, mdIndex);
     }
@@ -206,7 +206,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         MdIndex mdIndex = null;
         String[] nameArray = splitPath(path);
         long code = -1;
-        long pCode = -1;
+        long pCode = 0;
         String dirName = null;
         for (String name : nameArray) {
             mdIndex = indexDao.findMdIndex(buildKey(code, name));
@@ -223,6 +223,6 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     }
 
     private String buildKey(long pCode, String fileName) {
-        return fileName + ":" + pCode;
+        return pCode  + ":" + fileName;
     }
 }

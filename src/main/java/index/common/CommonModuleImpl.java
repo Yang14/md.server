@@ -16,21 +16,19 @@ import java.util.Random;
 public class CommonModuleImpl implements CommonModule {
     private static Logger logger = LoggerFactory.getLogger("CommonModuleImpl");
 
-    private static Random random = new Random(Long.MAX_VALUE);
-    private long seed = (0x7fffffffffffffffL / 3) * 2;
-    private long two = 0x8000000000000000L + seed;
-    private long three = two + seed;
-    private String[] ipArray = new String[]{"192.168.0.10", "192.168.0.60", "192.168.0.58"};
+    private static Random random = new Random();
+    private String[] ipArray = new String[]{/*"192.168.0.12", "192.168.0.60", */"192.168.0.60"};
     private int ipLen = ipArray.length;
 
     @Override
     public long genFCode() {
-        return random.nextLong();
+        long fCode = random.nextLong();
+        return fCode >= 0 ? fCode : -fCode;
     }
 
     @Override
     public DCodeMap genDCode() {
-        return new DCodeMap(random.nextLong(),random.nextInt(ipLen));
+        return new DCodeMap(random.nextLong(), random.nextInt(ipLen));
     }
 
     @Override
@@ -39,17 +37,13 @@ public class CommonModuleImpl implements CommonModule {
     }
 
     @Override
-    public MdPos buildMdPos(long dCode,int bsNode) {
-        MdPos md = new MdPos();
-        md.setIp(ipArray[bsNode]);
-        md.setdCode(dCode);
-        md.setPort(PortEnum.SSDB_PORT);
-        return md;
+    public MdPos buildMdPos(long dCode, int bsNode) {
+        return new MdPos(ipArray[bsNode], PortEnum.SSDB_PORT, dCode);
     }
 
     @Override
     public MdPos buildMdPos(DCodeMap dCodeMap) {
-        return buildMdPos(dCodeMap.getdCode(),dCodeMap.getBsNode());
+        return buildMdPos(dCodeMap.getdCode(), dCodeMap.getBsNode());
     }
 
     @Override
@@ -58,13 +52,13 @@ public class CommonModuleImpl implements CommonModule {
     }
 
     @Override
-    public List<MdPos> buildMdPosList(Map<Long,Integer> dCodesMap) {
+    public List<MdPos> buildMdPosList(Map<Long, Integer> dCodesMap) {
         if (dCodesMap == null) {
             return null;
         }
         List<MdPos> mdPoses = new ArrayList<MdPos>();
         for (long key : dCodesMap.keySet()) {
-            mdPoses.add(buildMdPos(key,dCodesMap.get(key)));
+            mdPoses.add(buildMdPos(key, dCodesMap.get(key)));
         }
         return mdPoses;
     }
