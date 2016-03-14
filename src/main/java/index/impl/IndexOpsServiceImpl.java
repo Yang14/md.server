@@ -131,7 +131,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         MdIndexCacheTool.removeMdIndex(parentPath + separator + oldName);
         indexDao.insertMdIndex(newKey, mdIndex);
         indexDao.removeMdIndex(oldKey);
-        List<MdPos> mdPosList =  commonModule.buildMdPosList(parentIndex.getdCodeMap());
+        List<MdPos> mdPosList = commonModule.buildMdPosList(parentIndex.getdCodeMap());
         boolean renameResult = false;
         for (MdPos mdPos : mdPosList) {
             renameResult = indexDao.renameMd(mdPos, oldName, newName);
@@ -151,10 +151,33 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
             mdIndex = getMdIndexByPathAndRemove(path);
         }
         MdIndexCacheTool.clearMdIndexCache();
-        Queue<MdIndex> queue = new LinkedBlockingDeque<MdIndex>();
+        ExecutorService execs = Executors.newCachedThreadPool();
+        Queue<MdIndex> queue = new ConcurrentLinkedQueue<MdIndex>();
         queue.offer(mdIndex);
-        delDirRecursive(queue);
+        //delDirRecursive(queue);
+        List<MdIndex> mdIndexes = new ArrayList<MdIndex>();
+        mdIndexes.add(mdIndex);
+        parallelGetSubDir(execs, mdIndexes);
+        execs.shutdown();
+        try {
+            execs.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return true;
+    }
+
+    private void parallelGetSubDir(final Executor exec, List<MdIndex> mdIndexes) {
+        for (final MdIndex index : mdIndexes) {
+            exec.execute(new Runnable() {
+                @Override
+                public void run() {
+                    delDirHashBucket(index);
+                }
+            });
+            parallelGetSubDir(exec, indexDao.findSubDirMdIndexAndRemove(index.getfCode()));
+        }
+
     }
 
     private void delDirRecursive(final Queue<MdIndex> queue) {
@@ -231,6 +254,6 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     }
 
     private String buildKey(long pCode, String fileName) {
-        return pCode  + ":" + fileName;
+        return pCode + ":" + fileName;
     }
 }
