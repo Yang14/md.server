@@ -30,7 +30,8 @@ public class CommonModuleImpl implements CommonModule {
             String ipStr;
             String info = "backend server Ip:";
             while ((ipStr = buf.readLine()) != null) {
-                info += ipStr +"/";
+                if (ipStr.startsWith("#")) continue;
+                info += ipStr + "/";
                 ipList.add(ipStr);
             }
             logger.info(info);

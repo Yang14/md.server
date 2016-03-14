@@ -3,6 +3,7 @@ package md.server;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import redis.clients.jedis.Jedis;
 
 /**
  * Unit test for simple App.
@@ -33,6 +34,7 @@ public class AppTest
      */
     public void testApp()
     {
-        assertTrue( true );
+        Jedis jedis = new Jedis("192.168.0.13",22121);
+        System.out.println(jedis.get("a"));
     }
 }
