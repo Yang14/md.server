@@ -84,7 +84,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         for (long key : dCodeMap.keySet()) {
             dCode = new DCodeMap(key, dCodeMap.get(key));
         }
-        boolean isFit = commonModule.isDCodeFit(dCode.getBsNode());
+        boolean isFit = commonModule.isDCodeFit(dCode.getdCode());
         if (!isFit) {
             dCode = commonModule.genDCode();
             updateDCodeListWithNewCode(parentIndex, path, dCode);

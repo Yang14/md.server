@@ -8,10 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -24,7 +21,9 @@ public class CommonModuleImpl implements CommonModule {
     private String[] ipArray;
     private int ipLen;
     private AtomicInteger cycle = new AtomicInteger(0);
-    private Object obj = new Object();
+    private final Object obj = new Object();
+    //超过阈值的桶
+    public final static Set<Long> dCodeSet =  Collections.synchronizedSet(new HashSet<Long>());
 
     public CommonModuleImpl() {
         try {
@@ -47,6 +46,8 @@ public class CommonModuleImpl implements CommonModule {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        //启动订阅后台线程
+        new SubThread().start();
     }
 
     @Override
@@ -70,7 +71,11 @@ public class CommonModuleImpl implements CommonModule {
 
 
     @Override
-    public boolean isDCodeFit(int bsNode) {
+    public boolean isDCodeFit(long dCode) {
+        if (dCodeSet.contains(dCode)){
+            dCodeSet.remove(dCode);
+            return false;
+        }
         return true;
     }
 

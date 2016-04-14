@@ -21,9 +21,9 @@ public interface CommonModule {
 
 
     /**
-     * 检验分布编码对应的节点能否继续保持新的元数据
+     * 检验桶能否继续保持新的元数据
      */
-    public boolean isDCodeFit(int bsNode);
+    public boolean isDCodeFit(long bsNode);
 
     /**
      * 获取分布编码对应的元数据节点信息
