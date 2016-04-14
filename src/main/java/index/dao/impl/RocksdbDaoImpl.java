@@ -25,6 +25,7 @@ public class RocksdbDaoImpl implements IndexDao {
     public static Options options = new Options().setCreateIfMissing(true);
     public static RocksDB db = null;
     public static final String RDB_DECODE = "UTF8";
+    public final Object obj = new Object();
 
     static {
         RocksDB.loadLibrary();
@@ -71,12 +72,15 @@ public class RocksdbDaoImpl implements IndexDao {
         String startStr = fCode + "";
         String endStr = (fCode + 1) + "";
         MdIndex mdIndex;
+//        long startTime = System.currentTimeMillis();
         for (it.seek(startStr.getBytes());
              it.isValid() && (new String(it.key()).compareTo(endStr) < 0); it.next()) {
             mdIndex = JSON.parseObject(new String(it.value()), MdIndex.class);
             mdIndexes.add(mdIndex);
             removeKV(it.key());
         }
+//        long endTime = System.currentTimeMillis();
+//        logger.info("del " + fCode + " time: " + (endTime -startTime));
         return mdIndexes;
     }
 
@@ -96,12 +100,19 @@ public class RocksdbDaoImpl implements IndexDao {
     }
 
     @Override
-    public boolean renameMd(MdPos mdPos, String oldName, String newName) {
+    public synchronized boolean renameMd(MdPos mdPos, String oldName, String newName) {
         SSDB ssdb = ConnTool.getSSDB(mdPos);
-        long dCode = mdPos.getdCode();
-        MdAttr mdAttr = JSON.parseObject(ssdb.hget(dCode, oldName).asString(), MdAttr.class);
-        mdAttr.setName(newName);
-        ssdb.hdel(dCode, oldName);
-        return ssdb.hset(dCode, newName, JSON.toJSONString(mdAttr)).ok();
+        synchronized (obj)
+        {
+            long dCode = mdPos.getdCode();
+            if (ssdb.hget(dCode,oldName).notFound()){
+                logger.info(dCode + " " + oldName );
+                return true;
+            }
+            MdAttr mdAttr = JSON.parseObject(ssdb.hget(dCode, oldName).asString(), MdAttr.class);
+            mdAttr.setName(newName);
+            ssdb.hdel(dCode, oldName);
+            return ssdb.hset(dCode, newName, JSON.toJSONString(mdAttr)).ok();
+        }
     }
 }

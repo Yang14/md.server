@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by Mr-yang on 16-1-11.
@@ -22,6 +23,8 @@ public class CommonModuleImpl implements CommonModule {
     private static Random random = new Random();
     private String[] ipArray;
     private int ipLen;
+    private AtomicInteger cycle = new AtomicInteger(0);
+    private Object obj = new Object();
 
     public CommonModuleImpl() {
         try {
@@ -54,8 +57,17 @@ public class CommonModuleImpl implements CommonModule {
 
     @Override
     public DCodeMap genDCode() {
-        return new DCodeMap(random.nextLong(), random.nextInt(ipLen));
+        long dCode = random.nextLong();
+        int bsNode;
+        synchronized (obj) {
+            bsNode = cycle.getAndIncrement();
+            if (bsNode == ipLen - 1) {
+                cycle.set(0);
+            }
+        }
+        return new DCodeMap(dCode, bsNode);
     }
+
 
     @Override
     public boolean isDCodeFit(int bsNode) {

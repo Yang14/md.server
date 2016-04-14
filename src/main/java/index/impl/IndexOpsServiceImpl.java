@@ -28,6 +28,7 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     private int coreSize = Runtime.getRuntime().availableProcessors();
     private final Executor exec = new ThreadPoolExecutor(coreSize, coreSize + 1, 0L,
             TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>());
+    private final Object object = new Object();
 
     //    private final Executor exec = Executors.newCachedThreadPool();
     public IndexOpsServiceImpl() throws RemoteException {
@@ -122,8 +123,8 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     }
 
     @Override
-    public boolean renameDirIndex(String parentPath, String oldName, String newName) throws RemoteException {
-        MdIndex parentIndex = getMdIndexByPath(parentPath);
+    public boolean renameDirIndex(String parentPath, final String oldName, final String newName) throws RemoteException {
+        final MdIndex parentIndex = getMdIndexByPath(parentPath);
         String oldKey = buildKey(parentIndex.getfCode(), oldName);
         MdIndex mdIndex = indexDao.findMdIndex(oldKey);
         String newKey = buildKey(parentIndex.getfCode(), newName);
@@ -131,15 +132,34 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
         MdIndexCacheTool.removeMdIndex(parentPath + separator + oldName);
         indexDao.insertMdIndex(newKey, mdIndex);
         indexDao.removeMdIndex(oldKey);
-        List<MdPos> mdPosList = commonModule.buildMdPosList(parentIndex.getdCodeMap());
-        boolean renameResult = false;
+        /*List<MdPos> mdPosList = commonModule.buildMdPosList(parentIndex.getdCodeMap());
+        boolean renameResult;
+        for (MdPos mdPos : mdPosList) {
+            renameResult = indexDao.renameMd(mdPos, oldName, newName);
+            if (renameResult) {
+                break;
+            }
+        }*/
+        synchronized (object) {
+            exec.execute(new Runnable() {
+                @Override
+                public void run() {
+                    doRenameDirByBackendThread(parentIndex.getdCodeMap(), oldName, newName);
+                }
+            });
+        }
+        return true;
+    }
+
+    private synchronized void doRenameDirByBackendThread(Map<Long,Integer> map,String oldName, String newName){
+        List<MdPos> mdPosList = commonModule.buildMdPosList(map);
+        boolean renameResult;
         for (MdPos mdPos : mdPosList) {
             renameResult = indexDao.renameMd(mdPos, oldName, newName);
             if (renameResult) {
                 break;
             }
         }
-        return renameResult;
     }
 
     @Override
@@ -151,23 +171,20 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
             mdIndex = getMdIndexByPathAndRemove(path);
         }
         MdIndexCacheTool.clearMdIndexCache();
-        ExecutorService execs = Executors.newCachedThreadPool();
-        Queue<MdIndex> queue = new ConcurrentLinkedQueue<MdIndex>();
-        queue.offer(mdIndex);
-        //delDirRecursive(queue);
+        //ExecutorService execs = Executors.newCachedThreadPool();
         List<MdIndex> mdIndexes = new ArrayList<MdIndex>();
         mdIndexes.add(mdIndex);
-        parallelGetSubDir(execs, mdIndexes);
-        execs.shutdown();
+        parallelGetSubDir(mdIndexes);
+        /*execs.shutdown();
         try {
             execs.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }
+        }*/
         return true;
     }
 
-    private void parallelGetSubDir(final Executor exec, List<MdIndex> mdIndexes) {
+    private void parallelGetSubDir(List<MdIndex> mdIndexes) {
         for (final MdIndex index : mdIndexes) {
             exec.execute(new Runnable() {
                 @Override
@@ -175,9 +192,8 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
                     delDirHashBucket(index);
                 }
             });
-            parallelGetSubDir(exec, indexDao.findSubDirMdIndexAndRemove(index.getfCode()));
+            parallelGetSubDir(indexDao.findSubDirMdIndexAndRemove(index.getfCode()));
         }
-
     }
 
     private void delDirRecursive(final Queue<MdIndex> queue) {
