@@ -23,6 +23,8 @@ public interface IndexOpsService extends Remote {
      */
     public MdPos getMdPosForCreateFile(String path) throws RemoteException;
 
+    public MdPos getMdPosListForCreateFile(String path) throws RemoteException;
+
     /**
      * 查询文件时：path是查询文件的父目录路径
      * 列表目录时，path是目录路径

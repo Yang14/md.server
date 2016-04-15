@@ -123,6 +123,25 @@ public class IndexOpsServiceImpl extends UnicastRemoteObject implements IndexOps
     }
 
     @Override
+    public MdPos getMdPosListForCreateFile(String path) throws RemoteException {
+        MdIndex mdIndex = getMdIndexByPath(path);
+        if (mdIndex == null) {
+            return null;
+        }
+        Map<Long, Integer> dCodeMap = mdIndex.getdCodeMap();
+        DCodeMap dCode = null;
+        for (long key : dCodeMap.keySet()) {
+            dCode = new DCodeMap(key, dCodeMap.get(key));
+        }
+        boolean isFit = commonModule.isDCodeFit(dCode.getdCode());
+        if (!isFit) {
+            dCode = commonModule.genDCode();
+            updateDCodeListWithNewCode(mdIndex, path, dCode);
+        }
+        return commonModule.buildMdPos(dCode);
+    }
+
+    @Override
     public boolean renameDirIndex(String parentPath, final String oldName, final String newName) throws RemoteException {
         final MdIndex parentIndex = getMdIndexByPath(parentPath);
         String oldKey = buildKey(parentIndex.getfCode(), oldName);
