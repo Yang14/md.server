@@ -5,9 +5,6 @@ import base.tool.PortEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,35 +15,15 @@ public class CommonModuleImpl implements CommonModule {
     private static Logger logger = LoggerFactory.getLogger("CommonModuleImpl");
 
     private static Random random = new Random();
-    private String[] ipArray;
-    private int ipLen;
+    public static List<String> ipArray = new ArrayList<String>();
+    public static int ipLen;
     private AtomicInteger cycle = new AtomicInteger(0);
     private final Object obj = new Object();
     //超过阈值的桶
     public final static Set<Long> dCodeSet =  Collections.synchronizedSet(new HashSet<Long>());
 
     public CommonModuleImpl() {
-        try {
-            BufferedReader buf = new BufferedReader(new FileReader("/home/yang/workspace/bs_ip"));
-            List<String> ipList = new ArrayList<String>();
-            String ipStr;
-            String info = "backend server Ip:";
-            while ((ipStr = buf.readLine()) != null) {
-                if (ipStr.startsWith("#")) continue;
-                info += ipStr + "/";
-                ipList.add(ipStr);
-            }
-            logger.info(info);
-            ipLen = ipList.size();
-            ipArray = new String[ipLen];
-            int i = 0;
-            for (String ip : ipList) {
-                ipArray[i++] = ip;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //启动订阅后台线程
+        //启动后台订阅线程
         new SubThread().start();
     }
 
@@ -81,7 +58,7 @@ public class CommonModuleImpl implements CommonModule {
 
     @Override
     public MdPos buildMdPos(long dCode, int bsNode) {
-        return new MdPos(ipArray[bsNode], PortEnum.SSDB_PORT, dCode);
+        return new MdPos(ipArray.get(bsNode), PortEnum.SSDB_PORT, dCode);
     }
 
     @Override
